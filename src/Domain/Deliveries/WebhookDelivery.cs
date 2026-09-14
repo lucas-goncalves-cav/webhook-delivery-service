@@ -77,14 +77,19 @@ public class WebhookDeliveryRecord : BaseEntity
     {
     }
 
-    public WebhookDeliveryRecord(WebhookEvent webhookEvent, WebhookEndpoint endpoint)
+    /// <summary>
+    /// The current time is passed in rather than read from the clock, so the
+    /// scheduling behaviour can be tested deterministically.
+    /// </summary>
+    public WebhookDeliveryRecord(WebhookEvent webhookEvent, WebhookEndpoint endpoint, DateTime now)
     {
         EventId = webhookEvent.Id;
         EndpointId = endpoint.Id;
         Url = endpoint.Url;
         Status = DeliveryStatus.Pending;
         AttemptCount = 0;
-        NextAttemptAt = DateTime.UtcNow;
+        NextAttemptAt = now;
+        CreatedAt = now;
     }
 
     public Guid EventId { get; private set; }
@@ -185,7 +190,7 @@ public class WebhookDeliveryRecord : BaseEntity
     /// kept, so a replayed delivery shows every attempt including the ones that
     /// caused it to fail the first time.
     /// </summary>
-    public void Replay()
+    public void Replay(DateTime now)
     {
         if (Status is not (DeliveryStatus.Failed or DeliveryStatus.Cancelled))
         {
@@ -193,7 +198,7 @@ public class WebhookDeliveryRecord : BaseEntity
         }
 
         Status = DeliveryStatus.Pending;
-        NextAttemptAt = DateTime.UtcNow;
+        NextAttemptAt = now;
         FailedAt = null;
         LastError = null;
 
