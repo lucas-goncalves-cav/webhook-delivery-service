@@ -52,7 +52,13 @@ app.MapEndpointRoutes();
 app.MapEventRoutes();
 app.MapDeliveryRoutes();
 
-app.MapHealthChecks("/health/live");
+// Liveness answers "is this process alive", so it must not depend on the
+// database. A database outage should make the service unready, not make
+// the orchestrator kill and restart a perfectly healthy process.
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false
+});
 app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
     Predicate = check => check.Tags.Contains("ready")

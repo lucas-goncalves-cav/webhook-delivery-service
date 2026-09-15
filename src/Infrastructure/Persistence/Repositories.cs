@@ -65,7 +65,20 @@ public sealed class EndpointRepository : IEndpointRepository
     public async Task AddAsync(WebhookEndpoint endpoint, CancellationToken cancellationToken = default) =>
         await _context.Endpoints.AddAsync(endpoint, cancellationToken);
 
-    public void Update(WebhookEndpoint endpoint) => _context.Endpoints.Update(endpoint);
+    /// <summary>
+    /// Entities returned by this repository are already tracked, so the change
+    /// tracker picks up modifications on its own. Calling Update() on a tracked
+    /// entity marks the whole graph as Modified, which for an aggregate with
+    /// child collections makes EF try to UPDATE rows that were just added.
+    /// Attaching is only needed for a detached instance.
+    /// </summary>
+    public void Update(WebhookEndpoint endpoint)
+    {
+        if (_context.Entry(endpoint).State == EntityState.Detached)
+        {
+            _context.Endpoints.Update(endpoint);
+        }
+    }
 }
 
 public sealed class EventRepository : IEventRepository
@@ -213,5 +226,17 @@ public sealed class DeliveryRepository : IDeliveryRepository
         CancellationToken cancellationToken = default) =>
         await _context.Deliveries.AddRangeAsync(deliveries, cancellationToken);
 
-    public void Update(WebhookDeliveryRecord delivery) => _context.Deliveries.Update(delivery);
+    /// <summary>
+    /// See the note on <see cref="EndpointRepository.Update"/>. It matters more
+    /// here: a delivery owns its attempt log, and marking the aggregate as
+    /// Modified would make EF issue an UPDATE for an attempt row that has not
+    /// been inserted yet.
+    /// </summary>
+    public void Update(WebhookDeliveryRecord delivery)
+    {
+        if (_context.Entry(delivery).State == EntityState.Detached)
+        {
+            _context.Deliveries.Update(delivery);
+        }
+    }
 }

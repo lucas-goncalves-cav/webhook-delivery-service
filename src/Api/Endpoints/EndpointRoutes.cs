@@ -32,15 +32,15 @@ public static class EndpointRoutes
 
         group.MapGet("/", async (
             [FromQuery] bool? active,
-            [FromQuery] int page,
-            [FromQuery] int pageSize,
+            [FromQuery] int? page,
+            [FromQuery] int? pageSize,
             IEndpointService service,
             CancellationToken cancellationToken) =>
         {
             var result = await service.SearchAsync(
                 active,
-                page <= 0 ? 1 : page,
-                pageSize is <= 0 or > 100 ? 20 : pageSize,
+                page is null or <= 0 ? 1 : page.Value,
+                pageSize is null or <= 0 or > 100 ? 20 : pageSize.Value,
                 cancellationToken);
 
             return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblem();

@@ -62,8 +62,11 @@ public static class DeliveryRoutes
             [FromQuery] DeliveryStatus? status,
             [FromQuery] DateTime? from,
             [FromQuery] DateTime? to,
-            [FromQuery] int page,
-            [FromQuery] int pageSize,
+            // Nullable so the parameters are genuinely optional. A minimal API
+            // treats a non nullable value type as required and returns 400 when
+            // it is missing, which would make GET /api/deliveries fail.
+            [FromQuery] int? page,
+            [FromQuery] int? pageSize,
             IDeliveryService service,
             CancellationToken cancellationToken) =>
         {
@@ -73,8 +76,8 @@ public static class DeliveryRoutes
                 status,
                 from,
                 to,
-                page <= 0 ? 1 : page,
-                pageSize is <= 0 or > 100 ? 20 : pageSize);
+                page is null or <= 0 ? 1 : page.Value,
+                pageSize is null or <= 0 or > 100 ? 20 : pageSize.Value);
 
             var result = await service.SearchAsync(filter, cancellationToken);
 
