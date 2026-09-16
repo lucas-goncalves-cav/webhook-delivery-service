@@ -24,6 +24,13 @@ ENV ASPNETCORE_HTTP_PORTS=8080 \
     ENTRYPOINT_DLL=$ENTRYPOINT_DLL
 WORKDIR /app
 
+# The .NET runtime images ship without curl or wget, so a container health
+# check has nothing to call the endpoint with. Installing curl is the smallest
+# way to make HEALTHCHECK and compose's service_healthy condition work.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
 EXPOSE 8080
 
 COPY --from=build /app ./
